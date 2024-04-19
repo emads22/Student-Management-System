@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         # Create menu items for File and Help
         file_menu_item = self.menuBar().addMenu("&File")
         help_menu_item = self.menuBar().addMenu("&Help")
+        edit_menu_item = self.menuBar().addMenu("&Edit")
 
         # Add sub-items to menu items, called actions
         add_student_action = QAction("Add Student", self)
@@ -51,6 +52,10 @@ class MainWindow(QMainWindow):
         about_action = QAction("About", self)
         help_menu_item.addAction(about_action)
         # about_action.setMenuRole(QAction.MenuRole.NoRole)  # add this line only if help sub-menu didn't appear
+
+        search_student_action = QAction("Search", self)
+        search_student_action.triggered.connect(self.search_student)
+        edit_menu_item.addAction(search_student_action)
 
         # Create a table widget for displaying student data
         self.table = QTableWidget()
@@ -119,9 +124,18 @@ class MainWindow(QMainWindow):
         # Create an instance of InsertStudentDialog
         dialog = InsertStudentDialog()
         # Execute the dialog (blocks until the dialog is closed)
-        result = dialog.exec()
+        dialog.exec()
         # Reload the table data after the insert dialog is finished
         self.load_table_data()
+
+    def search_student(self):
+        """
+        Opens a dialog for searching a student.
+        """
+        # Create an instance of InsertStudentDialog
+        dialog = SearchStudentDialog()
+        # Execute the dialog (blocks until the dialog is closed)
+        dialog.exec()
 
 
 class InsertStudentDialog(QDialog):
@@ -210,6 +224,44 @@ class InsertStudentDialog(QDialog):
         self.student_name.clear()
         self.course_name.setCurrentIndex(0)  # Assuming the default index is 0
         self.phone_number.clear()
+
+
+class SearchStudentDialog(QDialog):
+    """
+    Dialog for searching a student.
+    """
+
+    def __init__(self):
+        """
+        Initializes the dialog window.
+        """
+        super().__init__()
+
+        self.setWindowTitle("Search Student")
+
+        # Layout
+        layout = QVBoxLayout()
+
+        # Create widgets
+        self.student_name = QLineEdit()
+        self.student_name.setPlaceholderText("Name")
+
+        button = QPushButton("Search")
+        button.clicked.connect(self.search_this_student)
+
+        # Add widgets to layout
+        layout.addWidget(self.student_name)
+        layout.addWidget(button)
+
+        self.setLayout(layout)
+
+    def search_this_student(self):
+        """
+        Search for a student in the SQLite database.
+        """
+
+        # Clear/Reset student name input field
+        self.student_name.clear()
 
 
 # Main function to create and run the application

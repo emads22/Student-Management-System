@@ -17,8 +17,8 @@ def handle_logging():
     # Define the logging format
     log_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 
-    # Define the path to the log file: ASSETS_DIR/Logs/app.log
-    log_file = ASSETS_DIR / "Logs" / "app.log"
+    # Define the path to the log file: ASSETS_DIR/logs/app.log
+    log_file = ASSETS_DIR / "logs" / "app.log"
 
     try:
         # Ensure the directory for log files exists, create if not
