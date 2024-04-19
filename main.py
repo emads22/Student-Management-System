@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QGridLayout,
-                             QLabel, QLineEdit, QPushButton, QTableWidget,
-                             QTableWidgetItem, QDialog, QComboBox, QVBoxLayout)
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QLineEdit, QPushButton, 
+                             QTableWidget, QTableWidgetItem, QDialog, QComboBox, 
+                             QVBoxLayout, QMessageBox)
 from PyQt6.QtGui import QAction
 import sys
 import sqlite3
@@ -56,6 +57,10 @@ class MainWindow(QMainWindow):
         search_student_action = QAction("Search", self)
         search_student_action.triggered.connect(self.search_student)
         edit_menu_item.addAction(search_student_action)
+
+        clear_selection_action = QAction("Clear All", self)
+        clear_selection_action.triggered.connect(self.clear_selection)
+        edit_menu_item.addAction(clear_selection_action)
 
         # Create a table widget for displaying student data
         self.table = QTableWidget()
@@ -122,20 +127,26 @@ class MainWindow(QMainWindow):
         Opens a dialog for inserting a new student.
         """
         # Create an instance of InsertStudentDialog
-        dialog = InsertStudentDialog()
+        dialog = InsertStudentDialog(parent=self)
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
-        # Reload the table data after the insert dialog is finished
-        self.load_table_data()
 
     def search_student(self):
         """
         Opens a dialog for searching a student.
         """
         # Create an instance of InsertStudentDialog
-        dialog = SearchStudentDialog()
+        dialog = SearchStudentDialog(parent=self)
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
+
+    def clear_selection(self):
+        """
+        Clear the selection in the table widget.
+
+        This method clears any selected items in the table widget, effectively deselecting all currently selected rows and columns.
+        """
+        self.table.clearSelection()
 
 
 class InsertStudentDialog(QDialog):
@@ -143,11 +154,13 @@ class InsertStudentDialog(QDialog):
     Dialog for adding a new student.
     """
 
-    def __init__(self):
+    def __init__(self, parent):
         """
         Initializes the dialog window.
         """
         super().__init__()
+
+        self.parent_window = parent
 
         self.setWindowTitle("Insert Student Data")
 
@@ -194,11 +207,13 @@ class InsertStudentDialog(QDialog):
             cursor.execute(INSERT_STUDENT_QUERY, (name, course, phone))
             # Commit changes to the database
             connection.commit()
-
-            # log success message
-            logging.info("Student added successfully.")
+            
             # Reset the inputs
             self.clear_inputs()
+            # Reload the table data after the insert dialog is finished
+            self.parent_window.load_table_data()
+            # log success message
+            logging.info("Student added successfully.")
 
         except sqlite3.Error as e:
             # Rollback changes if an error occurs
@@ -231,11 +246,13 @@ class SearchStudentDialog(QDialog):
     Dialog for searching a student.
     """
 
-    def __init__(self):
+    def __init__(self, parent):
         """
         Initializes the dialog window.
         """
         super().__init__()
+
+        self.parent_window = parent
 
         self.setWindowTitle("Search Student")
 
@@ -259,9 +276,55 @@ class SearchStudentDialog(QDialog):
         """
         Search for a student in the SQLite database.
         """
+        # Get the student name input
+        this_name = self.student_name.text().title()
 
-        # Clear/Reset student name input field
-        self.student_name.clear()
+        connection = None
+        # Establish a connection to the SQLite database and Create a cursor object to execute queries
+        try:
+            connection = sqlite3.connect(DB_FILE)
+            cursor = connection.cursor()
+            
+            # Execute the SQL query to search for this student record(s)
+            cursor.execute(SEARCH_STUDENT_QUERY, (this_name, ))
+
+            # Fetch all the rows returned by the query
+            this_student_rows = cursor.fetchall()
+            
+            if len(this_student_rows) == 0:
+                # Display an alert that this student is not found in the database
+                QMessageBox.warning(self, "Student Not Found", f"No records found for student: {this_name}")
+                # Clear the input field if student is not found
+                self.student_name.clear()
+
+            else:  
+                # highlight all rows/records found of this student in the table              
+                records_found = self.parent_window.table.findItems(this_name, Qt.MatchFlag.MatchFixedString)
+            
+                # for record in records_found:  #fixme    
+                #     self.parent_window.table.item(record.row(), 1).setSelected(True)
+
+                for record in records_found:
+                    for column in range(self.parent_window.table.columnCount()):
+                        self.parent_window.table.item(record.row(), column).setSelected(True)
+
+                # log success message
+                logging.info("Student found and highlighted successfully.")
+            
+                # Close the dialog if the student is found
+                self.accept()
+
+        except sqlite3.Error as e:
+            # Log the error with details
+            logging.error(f"Error searching for this student name: {this_name}, Error: {e}")
+
+
+        finally:
+            # Close the cursor the database connection to release resources
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
 
 # Main function to create and run the application

@@ -10,3 +10,4 @@ COURSES = ['Math', 'Astronomy', 'Biology', 'Physics']
 GET_ALL_STUDENTS_QUERY = "SELECT * FROM students"
 # id field is defined as AUTOINCREMENT when defining the table in database
 INSERT_STUDENT_QUERY = "INSERT INTO students (name, course, mobile) VALUES(?, ?, ?)"
+SEARCH_STUDENT_QUERY = "SELECT * FROM students WHERE name = ?"
