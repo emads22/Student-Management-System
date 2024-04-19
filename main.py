@@ -4,7 +4,13 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QGridLayout,
 from PyQt6.QtGui import QAction
 import sys
 import sqlite3
+import logging
+from app_logging import handle_logging
 from constants import *
+
+
+# Set up logging using the custom handler
+handle_logging()
 
 
 # Define the main window class
@@ -92,11 +98,12 @@ class MainWindow(QMainWindow):
                     table_item = QTableWidgetItem(str(col_data))
                     # Set the QTableWidgetItem in the corresponding cell of the table
                     self.table.setItem(row_index, col_index, table_item)
-
-            print("Table data loaded successfully.")
+            # log success message
+            logging.info("Table data loaded successfully.")
 
         except sqlite3.Error as e:
-            print("Error loading table data:", e)
+            # log the error
+            logging.error("Error loading table data:", e)
 
         finally:
             # Close the cursor the database connection to release resources
@@ -171,12 +178,11 @@ class InsertStudentDialog(QDialog):
 
             # Execute the SQL query to insert a new student record
             cursor.execute(INSERT_STUDENT_QUERY, (name, course, phone))
-
             # Commit changes to the database
             connection.commit()
 
-            print("Student added successfully.")
-
+            # log success message
+            logging.info("Student added successfully.")
             # Reset the inputs
             self.clear_inputs()
 
@@ -184,7 +190,8 @@ class InsertStudentDialog(QDialog):
             # Rollback changes if an error occurs
             if connection:
                 connection.rollback()
-            print("Error adding student:", e)
+            # log the error
+            logging.error("Error adding student:", e)
 
         finally:
             # Close the cursor and connection
