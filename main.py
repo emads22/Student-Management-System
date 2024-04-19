@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QGridLayout, 
-                             QLabel, QLineEdit, QPushButton, QTableWidget, 
+from PyQt6.QtWidgets import (QApplication, QWidget, QMainWindow, QGridLayout,
+                             QLabel, QLineEdit, QPushButton, QTableWidget,
                              QTableWidgetItem, QDialog, QComboBox, QVBoxLayout)
 from PyQt6.QtGui import QAction
 import sys
@@ -49,8 +49,7 @@ class MainWindow(QMainWindow):
         # Create a table widget for displaying student data
         self.table = QTableWidget()
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(
-            ("Id", "Names", "Course", "Mobile"))
+        self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
         self.table.verticalHeader().setVisible(False)  # Hide the indexes column
 
         # Load table data initially
@@ -59,7 +58,6 @@ class MainWindow(QMainWindow):
         # Set the central widget of the main window to the table widget
         self.setCentralWidget(self.table)
 
-    # Method to load data into the table
     def load_table_data(self):
         """
         Load data from the database and populate the table with it.
@@ -68,69 +66,143 @@ class MainWindow(QMainWindow):
         all student records, and populates the table widget with the fetched data.
 
         """
-        # Establish a connection to the SQLite database
-        connection = sqlite3.connect(DB_FILE)
+        connection = None
+        try:
+            # Establish a connection to the SQLite database
+            connection = sqlite3.connect(DB_FILE)
 
-        # Create a cursor object and Execute the SQL query to retrieve all student records
-        cursor = connection.cursor()
-        cursor.execute(GET_ALL_STUDENTS_QUERY)
+            # Create a cursor object and Execute the SQL query to retrieve all student records
+            cursor = connection.cursor()
+            cursor.execute(GET_ALL_STUDENTS_QUERY)
 
-        # Fetch all the rows returned by the query
-        all_students_rows = cursor.fetchall()
+            # Fetch all the rows returned by the query
+            all_students_rows = cursor.fetchall()
 
-        # Reset the table to remove existing data
-        self.table.setRowCount(0)
+            # Reset the table to remove existing data
+            self.table.setRowCount(0)
 
-        # Iterate over each row fetched from the database
-        for row_index, row in enumerate(all_students_rows):
-            # Insert a new row into the table
-            self.table.insertRow(row_index)
+            # Iterate over each row fetched from the database
+            for row_index, row in enumerate(all_students_rows):
+                # Insert a new row into the table
+                self.table.insertRow(row_index)
 
-            # Iterate over each column data in the current row
-            for col_index, col_data in enumerate(row):
-                # Create a QTableWidgetItem and set its value to the current column value
-                table_item = QTableWidgetItem(str(col_data))
-                # Set the QTableWidgetItem in the corresponding cell of the table
-                self.table.setItem(row_index, col_index, table_item)
+                # Iterate over each column data in the current row
+                for col_index, col_data in enumerate(row):
+                    # Create a QTableWidgetItem and set its value to the current column value
+                    table_item = QTableWidgetItem(str(col_data))
+                    # Set the QTableWidgetItem in the corresponding cell of the table
+                    self.table.setItem(row_index, col_index, table_item)
 
-        # Close the database connection to release resources
-        connection.close()
+            print("Table data loaded successfully.")
+
+        except sqlite3.Error as e:
+            print("Error loading table data:", e)
+
+        finally:
+            # Close the cursor the database connection to release resources
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
     def insert_student(self):
+        """
+        Opens a dialog for inserting a new student.
+        """
+        # Create an instance of InsertStudentDialog
         dialog = InsertStudentDialog()
-        dialog.exec()
+        # Execute the dialog (blocks until the dialog is closed)
+        result = dialog.exec()
+        # Reload the table data after the insert dialog is finished
+        self.load_table_data()
 
 
 class InsertStudentDialog(QDialog):
+    """
+    Dialog for adding a new student.
+    """
+
     def __init__(self):
+        """
+        Initializes the dialog window.
+        """
         super().__init__()
 
-        self.setWindowTitle("Add a Student")
+        self.setWindowTitle("Insert Student Data")
 
         # Layout
         layout = QVBoxLayout()
 
         # Create widgets
-        name_input = QLineEdit()
-        name_input.setPlaceholderText("Enter a name")
-        
-        course_combobox = QComboBox()
-        course_combobox.addItems(COURSES)
-        course_combobox.setCurrentIndex(0)
+        self.student_name = QLineEdit()
+        self.student_name.setPlaceholderText("Name")
 
-        phone_input = QLineEdit()
-        phone_input.setPlaceholderText("Enter a phone number")
+        self.course_name = QComboBox()
+        self.course_name.addItems(COURSES)
 
-        submit_button = QPushButton("Submit")
-        submit_button.clicked.connect(self.accept)
+        self.phone_number = QLineEdit()
+        self.phone_number.setPlaceholderText("Phone number")
 
-        # add widgets to layout
-        layout.addWidget(name_input)
-        layout.addWidget(course_combobox)
-        layout.addWidget(phone_input)
-        layout.addWidget(submit_button)
+        button = QPushButton("Register")
+        button.clicked.connect(self.add_student)
+
+        # Add widgets to layout
+        layout.addWidget(self.student_name)
+        layout.addWidget(self.course_name)
+        layout.addWidget(self.phone_number)
+        layout.addWidget(button)
 
         self.setLayout(layout)
+
+    def add_student(self):
+        """
+        Adds a new student record to the SQLite database.
+        """
+        connection = None
+        # Establish a connection to the SQLite database and Create a cursor object to execute queries
+        try:
+            connection = sqlite3.connect(DB_FILE)
+            cursor = connection.cursor()
+
+            # Prepare data to insert
+            name = self.student_name.text().title()
+            course = self.course_name.currentText()
+            phone = self.phone_number.text()
+
+            # Execute the SQL query to insert a new student record
+            cursor.execute(INSERT_STUDENT_QUERY, (name, course, phone))
+
+            # Commit changes to the database
+            connection.commit()
+
+            print("Student added successfully.")
+
+            # Reset the inputs
+            self.clear_inputs()
+
+        except sqlite3.Error as e:
+            # Rollback changes if an error occurs
+            if connection:
+                connection.rollback()
+            print("Error adding student:", e)
+
+        finally:
+            # Close the cursor and connection
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+            # # Close the dialog when pressing 'Register'
+            # self.accept()
+
+    def clear_inputs(self):
+        """
+        Clear all input fields in the dialog.
+        """
+        # Clear input fields
+        self.student_name.clear()
+        self.course_name.setCurrentIndex(0)  # Assuming the default index is 0
+        self.phone_number.clear()
 
 
 # Main function to create and run the application
@@ -139,9 +211,9 @@ def main():
     # Set application style to Fusion
     app.setStyle("Fusion")
     # Create an instance of the main window
-    app_window = MainWindow()
+    main_window = MainWindow()
     # Show the main window
-    app_window.show()
+    main_window.show()
     # Start the application event loop
     sys.exit(app.exec())
 
