@@ -1,8 +1,9 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QMainWindow, QLineEdit, QPushButton,
                              QTableWidget, QTableWidgetItem, QDialog,
-                             QComboBox, QVBoxLayout, QMessageBox)
-from PyQt6.QtGui import QAction
+                             QComboBox, QVBoxLayout, QMessageBox,
+                             QToolBar, QAbstractItemView, QStatusBar)
+from PyQt6.QtGui import QAction, QIcon
 import sqlite3
 import logging
 from app_logging import handle_logging
@@ -33,8 +34,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        # Set the size of the main window
-        self.resize(417, 500)  # Set width and height of the window
+        # Set the minimum size of the main window
+        self.setMinimumSize(417, 500)  # Set width and height of the window
 
         # Set window title
         self.setWindowTitle("Student Management System")
@@ -44,21 +45,23 @@ class MainWindow(QMainWindow):
         help_menu_item = self.menuBar().addMenu("&Help")
         edit_menu_item = self.menuBar().addMenu("&Edit")
 
-        # Add sub-items to menu items, called actions
-        add_student_action = QAction("Add Student", self)
-        # Connect the "triggered" signal of the "Add Student" action to the insert_student method of the MainWindow class
-        add_student_action.triggered.connect(self.insert_student)
+        # Add sub-items to menu items, called actions (also add an icon for each to be used in the toolbar)
+        add_student_action = QAction(QIcon(str(ADD_ICON)), "Add Student", self)
+        # Connect the "triggered" signal of the "Add Student" action to the insert method of the MainWindow class
+        add_student_action.triggered.connect(self.insert)
         file_menu_item.addAction(add_student_action)
 
         about_action = QAction("About", self)
         help_menu_item.addAction(about_action)
         # about_action.setMenuRole(QAction.MenuRole.NoRole)  # add this line only if help sub-menu didn't appear
 
-        search_student_action = QAction("Search", self)
-        search_student_action.triggered.connect(self.search_student)
+        search_student_action = QAction(
+            QIcon(str(SEARCH_ICON)), "Search", self)
+        search_student_action.triggered.connect(self.search)
         edit_menu_item.addAction(search_student_action)
 
-        clear_selection_action = QAction("Clear All", self)
+        clear_selection_action = QAction(
+            QIcon(str(CLEAR_ICON)), "Clear All", self)
         clear_selection_action.triggered.connect(self.clear_selection)
         edit_menu_item.addAction(clear_selection_action)
 
@@ -67,12 +70,31 @@ class MainWindow(QMainWindow):
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
         self.table.verticalHeader().setVisible(False)  # Hide the indexes column
+        # Set the table to read-only and not editable
+        self.table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers)
+        # Detect a cell clicked in the table
+        self.table.cellClicked.connect(self.cell_clicked)
 
         # Load table data initially
         self.load_table_data()
 
         # Set the central widget of the main window to the table widget
         self.setCentralWidget(self.table)
+
+        # Create a toolbar and add its elements
+        toolbar = QToolBar()
+        toolbar.setMovable(True)
+        toolbar.addAction(add_student_action)
+        toolbar.addAction(search_student_action)
+        toolbar.addAction(clear_selection_action)
+
+        # Add the toolbar to the main window
+        self.addToolBar(toolbar)
+
+        # Create a statusbar and add it to the main window
+        self.statusbar = QStatusBar()
+        self.setStatusBar(self.statusbar)
 
     def load_table_data(self):
         """
@@ -114,34 +136,91 @@ class MainWindow(QMainWindow):
             # log the error
             logging.error("Error loading table data:", e)
 
-    def insert_student(self):
+    def cell_clicked(self):
+        """
+        Handle the event when a cell is clicked in the table.
+        """
+        # Create 'Edit Record' button and Connect its 'clicked' signal to 'edit' method
+        edit_button = QPushButton("Edit Record")
+        edit_button.clicked.connect(self.edit)
+
+        # Create 'Delete Record' button and Connect its 'clicked' signal to 'delete' method
+        delete_button = QPushButton("Delete Record")
+        delete_button.clicked.connect(self.delete)
+
+        # Reconfigure the status bar and clean it ti avoid duplicate buttons at each select
+        self.clear_statusbar()
+
+        # Add 'Edit Record' and 'Delete Record' buttons to the status bar
+        self.statusbar.addWidget(edit_button)
+        self.statusbar.addWidget(delete_button)
+
+    def insert(self):
         """
         Opens a dialog for inserting a new student.
         """
-        # Create an instance of InsertStudentDialog and pass the parent
-        dialog = InsertStudentDialog(parent=self)
+        # Create an instance of InsertDialog and pass the parent
+        dialog = InsertDialog(parent=self)
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
 
-    def search_student(self):
+    def search(self):
         """
         Opens a dialog for searching a student.
         """
-        # Create an instance of InsertStudentDialog and pass the parent
-        dialog = SearchStudentDialog(parent=self)
+        # Create an instance of SearchDialog and pass the parent
+        dialog = SearchDialog(parent=self)
+        # Execute the dialog (blocks until the dialog is closed)
+        dialog.exec()
+
+    def edit(self):
+        """
+        Opens a dialog for editing a student record.
+        """
+        # Create an instance of EditDialog and pass the parent
+        dialog = EditDialog()
+        # Execute the dialog (blocks until the dialog is closed)
+        dialog.exec()
+
+    def delete(self):
+        """
+        Opens a dialog for deleting a student record.
+        """
+        # Create an instance of DeleteDialog and pass the parent
+        dialog = DeleteDialog()
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
 
     def clear_selection(self):
         """
-        Clear the selection in the table widget.
+        Clear the selection in the table widget and status bar.
 
-        This method clears any selected items in the table widget, effectively deselecting all currently selected rows and columns.
+        This method clears any selected items in the table widget, effectively deselecting all currently selected rows and columns, and clearing the status bar.
         """
         self.table.clearSelection()
+        self.clear_statusbar()
+
+    def clear_statusbar(self):
+        """
+        Clear the status bar by removing any QPushButton widgets from it.
+
+        This method finds all child widgets of type QPushButton within the current widget
+        (main window) and removes them from the status bar.
+
+        Returns:
+            None
+        """
+        # Find all child widgets of type QPushButton within the current widget (main window)
+        children_btns = self.findChildren(QPushButton)
+
+        # Check if any QPushButton child widgets were found
+        if children_btns:
+            # Iterate over each QPushButton found and Remove it from the status bar
+            for child_btn in children_btns:
+                self.statusbar.removeWidget(child_btn)
 
 
-class InsertStudentDialog(QDialog):
+class InsertDialog(QDialog):
     """
     Dialog for adding a new student.
     """
@@ -157,7 +236,7 @@ class InsertStudentDialog(QDialog):
 
         # Set the fixed size of the dialog
         self.setFixedSize(200, 200)
-        
+
         self.setWindowTitle("Insert Student Data")
 
         # Layout
@@ -217,7 +296,8 @@ class InsertStudentDialog(QDialog):
                     cursor = connection.cursor()
 
                     # Execute the SQL query to insert a new student record
-                    cursor.execute(INSERT_STUDENT_QUERY, (name, course, '00961' + phone))
+                    cursor.execute(INSERT_STUDENT_QUERY,
+                                   (name, course, '00961' + phone))
                     # Commit changes to the database
                     connection.commit()
 
@@ -276,7 +356,7 @@ class InsertStudentDialog(QDialog):
         self.phone_number.clear()
 
 
-class SearchStudentDialog(QDialog):
+class SearchDialog(QDialog):
     """
     Dialog for searching a student.
     """
@@ -304,7 +384,7 @@ class SearchStudentDialog(QDialog):
 
         button = QPushButton("Search")
         button.setFixedHeight(30)
-        button.clicked.connect(self.search_this_student)
+        button.clicked.connect(self.search_student)
 
         # Add widgets to layout
         layout.addWidget(self.student_name)
@@ -312,7 +392,7 @@ class SearchStudentDialog(QDialog):
 
         self.setLayout(layout)
 
-    def search_this_student(self):
+    def search_student(self):
         """
         Searches for a student in the SQLite database.
         If found, highlights the records in the table and logs the success message.
@@ -337,13 +417,13 @@ class SearchStudentDialog(QDialog):
             # Iterate over each matching record found in the table
             for record in records_found:
                 # Get the row index of the current record
-                row_index = record.row()
+                row_i = record.row()
 
                 # Iterate over each column in the table
-                for col_index in range(self.parent_window.table.columnCount()):
+                for col_i in range(self.parent_window.table.columnCount()):
                     # Set the current cell as selected, indicating it's part of the found record
                     self.parent_window.table.item(
-                        row_index, col_index).setSelected(True)
+                        row_i, col_i).setSelected(True)
 
             # Log a success message
             logging.info("Student found and highlighted successfully.")
@@ -381,3 +461,11 @@ class SearchStudentDialog(QDialog):
 
         # Return True if student exists, False otherwise (in case of error list will be empty still so bool() returns False)
         return bool(this_student_rows)
+
+
+class EditDialog(QDialog):
+    pass
+
+
+class DeleteDialog(QDialog):
+    pass

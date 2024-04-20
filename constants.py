@@ -3,6 +3,9 @@ from pathlib import Path
 
 ASSETS_DIR = Path("./assets")
 DB_FILE = ASSETS_DIR / "data" / "database.db"
+ADD_ICON = ASSETS_DIR / "icons" / "add.png"
+SEARCH_ICON = ASSETS_DIR / "icons" / "search.png"
+CLEAR_ICON = ASSETS_DIR / "icons" / "clear.png"
 TABLE_HEADERS = ("Id", "Names", "Course", "Mobile")
 COURSES = ['Select Course','Math', 'Astronomy', 'Biology', 'Physics']
 
