@@ -4,7 +4,7 @@ from pathlib import Path
 ASSETS_DIR = Path("./assets")
 DB_FILE = ASSETS_DIR / "data" / "database.db"
 TABLE_HEADERS = ("Id", "Names", "Course", "Mobile")
-COURSES = ['Math', 'Astronomy', 'Biology', 'Physics']
+COURSES = ['Select Course','Math', 'Astronomy', 'Biology', 'Physics']
 
 # SQL Queries
 GET_ALL_STUDENTS_QUERY = "SELECT * FROM students"
@@ -12,3 +12,7 @@ GET_ALL_STUDENTS_QUERY = "SELECT * FROM students"
 INSERT_STUDENT_QUERY = "INSERT INTO students (name, course, mobile) VALUES(?, ?, ?)"
 SEARCH_STUDENT_QUERY = "SELECT * FROM students WHERE name = ?"
 
+# for name pattern allow alphabetical characters with 1 space betwen like 'John Doe'
+NAME_PATTERN = r'^[a-zA-Z]+ [a-zA-Z]+$'
+# for phone number pattern it must be 8 digits
+PHONE_NUMBER_PATTERN = r'^\d{8}$'

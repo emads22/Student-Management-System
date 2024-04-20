@@ -6,6 +6,7 @@ from PyQt6.QtGui import QAction
 import sqlite3
 import logging
 from app_logging import handle_logging
+import re
 from constants import *
 
 
@@ -33,7 +34,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Set the size of the main window
-        self.resize(400, 300)  # Set width and height of the window
+        self.resize(417, 500)  # Set width and height of the window
 
         # Set window title
         self.setWindowTitle("Student Management System")
@@ -154,6 +155,9 @@ class InsertStudentDialog(QDialog):
         # Get hold of the parent window calling this dialog in order to access it
         self.parent_window = parent
 
+        # Set the fixed size of the dialog
+        self.setFixedSize(200, 200)
+        
         self.setWindowTitle("Insert Student Data")
 
         # Layout
@@ -170,6 +174,7 @@ class InsertStudentDialog(QDialog):
         self.phone_number.setPlaceholderText("Phone number")
 
         button = QPushButton("Register")
+        button.setFixedHeight(30)
         button.clicked.connect(self.add_student)
 
         # Add widgets to layout
@@ -184,31 +189,82 @@ class InsertStudentDialog(QDialog):
         """
         Adds a new student record to the SQLite database.
         """
-        # Establish a connection to the SQLite database and create a cursor object within a with statement
-        try:
-            with sqlite3.connect(DB_FILE) as connection:
-                cursor = connection.cursor()
+        # Get inputs from the user
+        name = self.student_name.text().strip().title()
+        course = self.course_name.currentText()
+        phone = self.phone_number.text().strip()
 
-                # Prepare data to insert
-                name = self.student_name.text().title()
-                course = self.course_name.currentText()
-                phone = self.phone_number.text()
+        # Validate inputs
+        valid, warning = self.validate_inputs(name, course, phone)
 
-                # Execute the SQL query to insert a new student record
-                cursor.execute(INSERT_STUDENT_QUERY, (name, course, phone))
-                # Commit changes to the database
-                connection.commit()
+        # If inputs are not valid, display a warning message
+        if not valid:
+            QMessageBox.warning(self, "Invalid Input", warning)
 
-                # Reset the inputs
-                self.clear_inputs()
-                # Reload the table data after the insert dialog is finished
-                self.parent_window.load_table_data()
-                # Log success message
-                logging.info("Student added successfully.")
+            # Based on warning code, set focus to the respective input field (1: Name input field, 2: Course input field, 3: Phone number input field)
+            match int(warning[0]):
+                case 1:
+                    self.student_name.setFocus()  # Set focus to student name input field
+                case 2:
+                    self.course_name.setFocus()   # Set focus to course input field
+                case 3:
+                    self.phone_number.setFocus()  # Set focus to phone number input field
 
-        except sqlite3.Error as e:
-            # Rollback changes if an error occurs
-            logging.error("Error adding student:", e)
+        else:
+            # Once all inputs are valid, proceed to Establish a connection to the SQLite database and create a cursor object within a with statement
+            try:
+                with sqlite3.connect(DB_FILE) as connection:
+                    cursor = connection.cursor()
+
+                    # Execute the SQL query to insert a new student record
+                    cursor.execute(INSERT_STUDENT_QUERY, (name, course, '00961' + phone))
+                    # Commit changes to the database
+                    connection.commit()
+
+                    # Reset the inputs
+                    self.clear_inputs()
+                    # Reload the table data after the insert dialog is finished
+                    self.parent_window.load_table_data()
+                    # Log success message
+                    logging.info("Student added successfully.")
+
+            except sqlite3.Error as e:
+                # Rollback changes if an error occurs
+                logging.error("Error adding student:", e)
+
+    def validate_inputs(self, name, course, phone):
+        """
+        Validates the inputs for adding a new student record.
+
+        Args:
+            name (str): The name of the student.
+            course (str): The course of the student.
+            phone (str): The phone number of the student.
+
+        Returns:
+            tuple: A tuple containing a boolean indicating whether the inputs are valid 
+                   and a warning message if any, otherwise None.
+        """
+        warning_msg = ""
+
+        # Validate name
+        if not re.match(NAME_PATTERN, name):
+            warning_msg += "1- Name is invalid. Please use alphabet letters in the format:\n   <first_name last_name>. "
+
+        # Validate course
+        if course == 'Select Course':
+            warning_msg += "\n2- Please select a course. "
+
+        # Validate phone number
+        if not re.match(PHONE_NUMBER_PATTERN, phone):
+            warning_msg += "\n3- Phone number is invalid. It must be 8 digits in length. "
+
+        # Check if any warning messages were generated
+        if warning_msg:
+            return False, warning_msg.strip()  # Return False and the warning message
+
+        # Return True indicating all inputs are valid
+        return True, None
 
     def clear_inputs(self):
         """
@@ -234,6 +290,9 @@ class SearchStudentDialog(QDialog):
         # Get hold of the parent window calling this dialog in order to access it
         self.parent_window = parent
 
+        # Set the fixed size of the dialog
+        self.setFixedSize(200, 100)
+
         self.setWindowTitle("Search Student")
 
         # Layout
@@ -244,6 +303,7 @@ class SearchStudentDialog(QDialog):
         self.student_name.setPlaceholderText("Name")
 
         button = QPushButton("Search")
+        button.setFixedHeight(30)
         button.clicked.connect(self.search_this_student)
 
         # Add widgets to layout
