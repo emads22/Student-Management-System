@@ -2,7 +2,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QMainWindow, QLineEdit, QPushButton,
                              QTableWidget, QTableWidgetItem, QDialog,
                              QComboBox, QVBoxLayout, QMessageBox,
-                             QToolBar, QAbstractItemView, QStatusBar)
+                             QToolBar, QAbstractItemView, QStatusBar,
+                             QLabel, QGridLayout)
 from PyQt6.QtGui import QAction, QIcon
 import sqlite3
 import logging
@@ -52,6 +53,7 @@ class MainWindow(QMainWindow):
         file_menu_item.addAction(add_student_action)
 
         about_action = QAction("About", self)
+        about_action.triggered.connect(self.about)
         help_menu_item.addAction(about_action)
         # about_action.setMenuRole(QAction.MenuRole.NoRole)  # add this line only if help sub-menu didn't appear
 
@@ -130,11 +132,14 @@ class MainWindow(QMainWindow):
                         # Set the QTableWidgetItem in the corresponding cell of the table
                         self.table.setItem(row_i, col_i, table_item)
             # log success message
-            logging.info("Table data loaded successfully.")
+            success_msg = "Table data loaded successfully."
+            logging.info(success_msg)
 
         except sqlite3.Error as e:
             # log the error
-            logging.error("Error loading table data:", e)
+            error_msg = f"Error loading table data"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(f"{error_msg}: {e}")
 
     def cell_clicked(self):
         """
@@ -191,6 +196,15 @@ class MainWindow(QMainWindow):
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
 
+    def about(self):
+        """
+        Opens a dialog for about the app info.
+        """
+        # Create an instance of AboutDialog
+        dialog = AboutDialog(self)
+        # Execute the dialog (blocks until the dialog is closed)
+        dialog.exec()
+
     def clear_selection(self):
         """
         Clear the selection in the table widget and status bar.
@@ -218,6 +232,25 @@ class MainWindow(QMainWindow):
             # Iterate over each QPushButton found and Remove it from the status bar
             for child_btn in children_btns:
                 self.statusbar.removeWidget(child_btn)
+
+    def close_dialog(self, dialog):
+        """
+        Close a dialog window and clear selections in the main window.
+
+        This method takes a dialog window as input and closes it. After closing the dialog,
+        it clears the selections in the main window.
+
+        Args:
+            dialog: The dialog window to be closed.
+
+        Returns:
+            None
+        """
+        # Close the dialog window
+        dialog.close()
+
+        # Clear the selections in the main window
+        self.clear_selection()
 
 
 class InsertDialog(QDialog):
@@ -306,11 +339,16 @@ class InsertDialog(QDialog):
                     # Reload the table data after the insert dialog is finished
                     self.parent_window.load_table_data()
                     # Log success message
-                    logging.info("Student record added successfully.")
+                    success_msg = f'Student record for "{
+                        name}" added successfully.'
+                    QMessageBox.information(self, "Success", success_msg)
+                    logging.info(success_msg)
 
             except sqlite3.Error as e:
                 # Rollback changes if an error occurs
-                logging.error("Error adding student record:", e)
+                error_msg = f'Error adding student record for "{name}"'
+                QMessageBox.critical(self, "Error", error_msg)
+                logging.error(f"{error_msg}: {e}")
 
     def validate_insert_inputs(self, name, course, phone):
         """
@@ -426,10 +464,12 @@ class SearchDialog(QDialog):
                         row_i, col_i).setSelected(True)
 
             # Log a success message
-            logging.info("Student record found and highlighted successfully.")
+            success_msg = f'Student record for "{
+                this_name}" found and highlighted successfully.'
+            logging.info(success_msg)
 
             # Close the dialog if the student is found
-            self.accept()
+            self.close()
 
     def exists_in_db(self, student_name):
         """
@@ -451,8 +491,9 @@ class SearchDialog(QDialog):
 
         except sqlite3.Error as e:
             # Log the error with details
-            logging.error(f"Error while searching in database for {
-                          student_name}: {e}")
+            error_msg = f"Error searching in database for {student_name}"
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(f"{error_msg}: {e}")
 
         finally:
             # Close the cursor and connection
@@ -482,9 +523,6 @@ class EditDialog(QDialog):
 
         self.setWindowTitle("Update Student Data")
 
-        # Layout
-        layout = QVBoxLayout()
-
         # Get this selected user data
         # Get the index of the currently selected row in the table
         row_i = self.parent_window.table.currentRow()
@@ -496,6 +534,9 @@ class EditDialog(QDialog):
         self.initial_course = self.parent_window.table.item(row_i, 2).text()
         # Get the student's phone number of the item in the fourth column (index 3) of the currently selected row
         self.initial_phone = self.parent_window.table.item(row_i, 3).text()
+
+        # Layout
+        layout = QVBoxLayout()
 
         # Create widgets and populate them with selected student data
         self.student_name = QLineEdit(self.initial_name)
@@ -549,7 +590,7 @@ class EditDialog(QDialog):
                 # if user hasn't made any modifications to this student record
                 if warning:
                     QMessageBox.information(
-                        self, "Update Not Required", warning)
+                        self, "Info", warning)
 
                 else:
                     # Once all inputs are valid and new data entered (modified), proceed to Establish a connection to the SQLite database and create a cursor object within a with statement
@@ -564,16 +605,22 @@ class EditDialog(QDialog):
                             connection.commit()
 
                             # Close the dialog if the student is updated
-                            self.accept()
+                            self.parent_window.close_dialog(self)
                             # Reload the table data after the update dialog is finished
                             self.parent_window.load_table_data()
                             # Log success message
-                            logging.info(
-                                "Student record updated successfully.")
+                            success_msg = f'Student record for "{
+                                name}" updated successfully.'
+                            QMessageBox.information(
+                                self, "Success", success_msg)
+                            logging.info(success_msg)
 
                     except sqlite3.Error as e:
                         # Rollback changes if an error occurs
-                        logging.error("Error updating student record:", e)
+                        error_msg = f'Error updating student record for "{
+                            name}"'
+                        QMessageBox.critical(self, "Error", error_msg)
+                        logging.error(f"{error_msg}: {e}")
 
     def validate_update_inputs(self, name, course, phone):
         """
@@ -654,4 +701,129 @@ class EditDialog(QDialog):
 
 
 class DeleteDialog(QDialog):
-    pass
+    """
+    Dialog for deleting a student record.
+    """
+
+    def __init__(self, parent):
+        """
+        Initializes the dialog window.
+        """
+        super().__init__()
+
+        # Get hold of the parent window calling this dialog in order to access it
+        self.parent_window = parent
+
+        # Set the fixed size of the dialog
+        # self.setFixedSize(200, 100)
+
+        self.setWindowTitle("Delete Student")
+
+        # Get this selected user data
+        # Get the index of the currently selected row in the table
+        row_i = self.parent_window.table.currentRow()
+        # Get the student's id of the item in the first column (index 0) of the currently selected row
+        self.student_id = self.parent_window.table.item(row_i, 0).text()
+        # Get the student's name of the item in the second column (index 1) of the currently selected row
+        self.student_name = self.parent_window.table.item(row_i, 1).text()
+
+        # Layout
+        layout = QGridLayout()
+
+        # Create widgets
+        confirmation = QLabel(f'Are you sure you want to delete the student record for "{
+                              self.student_name.title()}"?')
+
+        # Create a grid layout for buttons
+        buttons_grid = QGridLayout()
+
+        yes_btn = QPushButton("Yes")
+        yes_btn.setFixedWidth(50)
+        yes_btn.clicked.connect(self.delete_student)
+
+        no_btn = QPushButton("No")
+        no_btn.setFixedWidth(50)
+        # use lambda to add args
+        no_btn.clicked.connect(lambda: self.parent_window.close_dialog(self))
+
+        # Add buttons to the button grid
+        buttons_grid.addWidget(yes_btn, 1, 0)
+        buttons_grid.addWidget(no_btn, 1, 1)
+
+        # Add widgets to layout
+        layout.addWidget(confirmation, 0, 0, 1, 2)
+        layout.addLayout(buttons_grid, 1, 1)
+
+        self.setLayout(layout)
+
+    def delete_student(self):
+        """
+        Deletes the current selected student record in the SQLite database.
+        """
+        # Establish a connection to the SQLite database and create a cursor object within a with statement
+        try:
+            with sqlite3.connect(DB_FILE) as connection:
+                cursor = connection.cursor()
+
+                # Execute the SQL query to insert a new student record
+                cursor.execute(DELETE_STUDENT_QUERY, (self.student_id, ))
+                # Commit changes to the database
+                connection.commit()
+
+                # Close the dialog if the student is deleted
+                self.parent_window.close_dialog(self)
+                # Reload the table data after the delete dialog is finished
+                self.parent_window.load_table_data()
+                # Log success message
+                success_msg = f'Student record for "{
+                    self.student_name}" deleted successfully.'
+                QMessageBox.information(self, "Success", success_msg)
+                logging.info(success_msg)
+
+        except sqlite3.Error as e:
+            # Rollback changes if an error occurs
+            error_msg = f'Error deleting student record for "{
+                self.student_name}"'
+            QMessageBox.critical(self, "Error", error_msg)
+            logging.error(f"{error_msg}: {e}")
+
+
+class AboutDialog(QMessageBox):
+    """
+    Dialog to display info about the app.
+    """
+
+    def __init__(self, parent):
+        """
+        Initializes the dialog window.
+        """
+        super().__init__()
+
+        self.setWindowTitle("About")
+        content = """
+<h3>About This App</h3>
+<p>Student Management System is a comprehensive Python application designed to streamline the management of student records within educational institutions. Built using PyQt6 for the graphical user interface and SQLite for data storage, this system offers a user-friendly interface for administrators to efficiently handle student data.
+</p>
+<p>
+The primary goal of this system is to simplify the process of managing student information, including their names, courses, and contact details. It provides a centralized platform where administrators can seamlessly perform tasks such as adding new students, searching for specific records, editing existing entries, and deleting outdated information.
+</p>
+<p>
+The application's database schema is included, offering users the flexibility to customize and expand the database structure according to their specific requirements. Users are free to add new columns or data as preferred, ensuring adaptability to evolving needs and preferences.
+</p>
+<p>
+By leveraging Object-Oriented Programming (OOP) principles, the application is structured into modular components, enhancing maintainability and scalability. Each component, from the main window to the various dialog boxes, encapsulates specific functionalities, promoting code reusability and clarity.
+</p>
+<p>
+The graphical interface features intuitive controls, including a toolbar for quick access to common actions and a status bar that dynamically adjusts based on user interactions. Notably, the status bar displays contextual buttons for editing and deleting student records only when a row is selected, ensuring a streamlined user experience.
+</p>
+<p>
+With robust error handling mechanisms in place, the system maintains reliability and transparency in database operations. Administrators can rely on detailed log messages to track successful operations and diagnose any errors or exceptions that may occur during runtime. The error handling architecture is designed to be expandable, allowing for easy integration of additional error handling functionalities as needed.
+</p>
+<p>
+Overall, Student Management System serves as a powerful tool for educational institutions, offering an efficient and organized approach to managing student records. Whether it's maintaining up-to-date information or performing routine administrative tasks, this application empowers administrators to effectively oversee student data management with ease.</p>
+<p>Developed by: emads22</p>
+<p>Version: 1.0.0</p>
+<p>© 2024 E></p>
+<p>All rights reserved.</p>
+"""
+        self.setText(content)
