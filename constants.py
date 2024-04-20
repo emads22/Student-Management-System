@@ -14,6 +14,8 @@ GET_ALL_STUDENTS_QUERY = "SELECT * FROM students"
 # id field is defined as AUTOINCREMENT when defining the table in database
 INSERT_STUDENT_QUERY = "INSERT INTO students (name, course, mobile) VALUES(?, ?, ?)"
 SEARCH_STUDENT_QUERY = "SELECT * FROM students WHERE name = ?"
+UPDATE_STUDENT_QUERY = "UPDATE students SET name = ?, course = ?, mobile = ? WHERE id = ?"
+DELETE_STUDENT_QUERY = "DELETE FROM students WHERE id = ?"
 
 # for name pattern allow alphabetical characters with 1 space betwen like 'John Doe'
 NAME_PATTERN = r'^[a-zA-Z]+ [a-zA-Z]+$'

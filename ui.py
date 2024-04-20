@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         Opens a dialog for editing a student record.
         """
         # Create an instance of EditDialog and pass the parent
-        dialog = EditDialog()
+        dialog = EditDialog(parent=self)
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
 
@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
         Opens a dialog for deleting a student record.
         """
         # Create an instance of DeleteDialog and pass the parent
-        dialog = DeleteDialog()
+        dialog = DeleteDialog(parent=self)
         # Execute the dialog (blocks until the dialog is closed)
         dialog.exec()
 
@@ -274,7 +274,7 @@ class InsertDialog(QDialog):
         phone = self.phone_number.text().strip()
 
         # Validate inputs
-        valid, warning = self.validate_inputs(name, course, phone)
+        valid, warning = self.validate_insert_inputs(name, course, phone)
 
         # If inputs are not valid, display a warning message
         if not valid:
@@ -297,7 +297,7 @@ class InsertDialog(QDialog):
 
                     # Execute the SQL query to insert a new student record
                     cursor.execute(INSERT_STUDENT_QUERY,
-                                   (name, course, '00961' + phone))
+                                   (name, course, phone))
                     # Commit changes to the database
                     connection.commit()
 
@@ -306,13 +306,13 @@ class InsertDialog(QDialog):
                     # Reload the table data after the insert dialog is finished
                     self.parent_window.load_table_data()
                     # Log success message
-                    logging.info("Student added successfully.")
+                    logging.info("Student record added successfully.")
 
             except sqlite3.Error as e:
                 # Rollback changes if an error occurs
-                logging.error("Error adding student:", e)
+                logging.error("Error adding student record:", e)
 
-    def validate_inputs(self, name, course, phone):
+    def validate_insert_inputs(self, name, course, phone):
         """
         Validates the inputs for adding a new student record.
 
@@ -426,7 +426,7 @@ class SearchDialog(QDialog):
                         row_i, col_i).setSelected(True)
 
             # Log a success message
-            logging.info("Student found and highlighted successfully.")
+            logging.info("Student record found and highlighted successfully.")
 
             # Close the dialog if the student is found
             self.accept()
@@ -464,7 +464,193 @@ class SearchDialog(QDialog):
 
 
 class EditDialog(QDialog):
-    pass
+    """
+    Dialog for editing a student record.
+    """
+
+    def __init__(self, parent):
+        """
+        Initializes the dialog window.
+        """
+        super().__init__()
+
+        # Get hold of the parent window calling this dialog in order to access it
+        self.parent_window = parent
+
+        # Set the fixed size of the dialog
+        self.setFixedSize(200, 200)
+
+        self.setWindowTitle("Update Student Data")
+
+        # Layout
+        layout = QVBoxLayout()
+
+        # Get this selected user data
+        # Get the index of the currently selected row in the table
+        row_i = self.parent_window.table.currentRow()
+        # Get the student's id of the item in the first column (index 0) of the currently selected row
+        self.student_id = self.parent_window.table.item(row_i, 0).text()
+        # Get the student's name of the item in the second column (index 1) of the currently selected row
+        self.initial_name = self.parent_window.table.item(row_i, 1).text()
+        # Get the student's course of the item in the third column (index 2) of the currently selected row
+        self.initial_course = self.parent_window.table.item(row_i, 2).text()
+        # Get the student's phone number of the item in the fourth column (index 3) of the currently selected row
+        self.initial_phone = self.parent_window.table.item(row_i, 3).text()
+
+        # Create widgets and populate them with selected student data
+        self.student_name = QLineEdit(self.initial_name)
+
+        self.course_name = QComboBox()
+        self.course_name.addItems(COURSES)
+        self.course_name.setCurrentText(self.initial_course)
+
+        self.phone_number = QLineEdit(self.initial_phone)
+
+        button = QPushButton("Save")
+        button.setFixedHeight(30)
+        button.clicked.connect(self.update_student)
+
+        # Add widgets to layout
+        layout.addWidget(self.student_name)
+        layout.addWidget(self.course_name)
+        layout.addWidget(self.phone_number)
+        layout.addWidget(button)
+
+        self.setLayout(layout)
+
+    def update_student(self):
+        """
+        Updates a student record in the SQLite database.
+        """
+        # Prompt the user for confirmation before updating
+        if self.confirm_update():
+            # Get inputs from the user
+            name = self.student_name.text().strip().title()
+            course = self.course_name.currentText()
+            phone = self.phone_number.text().strip()
+
+            # Validate inputs
+            valid, warning = self.validate_update_inputs(name, course, phone)
+
+            # If inputs are not valid, display a warning message
+            if not valid:
+                QMessageBox.warning(self, "Invalid Input", warning)
+
+                # Based on warning code, set focus to the respective input field (1: Name input field, 2: Course input field, 3: Phone number input field)
+                match int(warning[0]):
+                    case 1:
+                        self.student_name.setFocus()  # Set focus to student name input field
+                    case 2:
+                        self.course_name.setFocus()   # Set focus to course input field
+                    case 3:
+                        self.phone_number.setFocus()  # Set focus to phone number input field
+
+            else:
+                # if user hasn't made any modifications to this student record
+                if warning:
+                    QMessageBox.information(
+                        self, "Update Not Required", warning)
+
+                else:
+                    # Once all inputs are valid and new data entered (modified), proceed to Establish a connection to the SQLite database and create a cursor object within a with statement
+                    try:
+                        with sqlite3.connect(DB_FILE) as connection:
+                            cursor = connection.cursor()
+
+                            # Execute the SQL query to insert a new student record
+                            cursor.execute(UPDATE_STUDENT_QUERY,
+                                           (name, course, phone, self.student_id))
+                            # Commit changes to the database
+                            connection.commit()
+
+                            # Close the dialog if the student is updated
+                            self.accept()
+                            # Reload the table data after the update dialog is finished
+                            self.parent_window.load_table_data()
+                            # Log success message
+                            logging.info(
+                                "Student record updated successfully.")
+
+                    except sqlite3.Error as e:
+                        # Rollback changes if an error occurs
+                        logging.error("Error updating student record:", e)
+
+    def validate_update_inputs(self, name, course, phone):
+        """
+        Validates the inputs for updating a student record.
+
+        Args:
+            name (str): The name of the student.
+            course (str): The course of the student.
+            phone (str): The phone number of the student.
+
+        Returns:
+            tuple: A tuple containing a boolean indicating whether the inputs are valid 
+                   and a warning message if any, otherwise None.
+        """
+        warning_msg = ""
+
+        # If no modifications recorded then return True (valid) with a message of no changes made
+        if (name == self.initial_name and
+            course == self.initial_course and
+                phone == self.initial_phone):
+            return True, "No modifications have been made, no update required. "
+
+        # Validate name
+        if not re.match(NAME_PATTERN, name):
+            warning_msg += "1- Name is invalid. Please use alphabet letters in the format:\n   <first_name last_name>. "
+
+        # Validate course
+        if course == 'Select Course':
+            warning_msg += "\n2- Please select a course. "
+
+        # Validate phone number
+        if not re.match(PHONE_NUMBER_PATTERN, phone):
+            warning_msg += "\n3- Phone number is invalid. It must be 8 digits in length. "
+
+        # Check if any warning messages were generated
+        if warning_msg:
+            return False, warning_msg.strip()  # Return False and the warning message
+
+        # Return True indicating all inputs are valid
+        return True, None
+
+    def confirm_update(self):
+        """
+        Display a confirmation dialog for updating a student record.
+
+        This function creates a QMessageBox instance to prompt the user for confirmation before updating a student record.
+        The dialog asks the user if they are sure they want to update the record.
+        The user can confirm the update by clicking the "Yes" button or cancel it by clicking the "No" button.
+
+        Returns:
+            bool: True if the user confirms the update, False if the user cancels it.
+        """
+        # Create a QMessageBox instance
+        msg_box = QMessageBox()
+
+        msg_box.setWindowTitle(f"Update Confirmation")
+        # Set the icon and text for the confirmation message box
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        msg_box.setText(f"Are you sure you want to update this record?")
+
+        # Add buttons for confirmation and cancellation
+        msg_box.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+        # Set the default button to No, so pressing Enter defaults to cancel
+        msg_box.setDefaultButton(QMessageBox.StandardButton.No)
+
+        # Execute the message box and wait for the user's response
+        response = msg_box.exec()
+
+        # Check the user's response
+        if response == QMessageBox.StandardButton.Yes:
+            # Return True to indicate the update was confirmed
+            return True
+        else:
+            # Return False if the user cancels the update
+            return False
 
 
 class DeleteDialog(QDialog):
