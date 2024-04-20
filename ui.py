@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Set the minimum size of the main window
-        self.setMinimumSize(417, 500)  # Set width and height of the window
+        self.setMinimumSize(410, 500)  # Set width and height of the window
 
         # Set window title
         self.setWindowTitle("Student Management System")
