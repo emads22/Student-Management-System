@@ -1,12 +1,4 @@
--- `students` Table
-CREATE TABLE students(
-    id INTEGER PRIMARY KEY AUTOINCREMENT, 
-    name TEXT, 
-    course TEXT, 
-    mobile INTEGER
-);
-
--- Population
+-- Populating
 INSERT INTO your_table_name (name, course, mobile) VALUES ('John Smith', 'Math', '11112233');
 INSERT INTO your_table_name (name, course, mobile) VALUES ('Asha Patel', 'Astronomy', '22233344');
 INSERT INTO your_table_name (name, course, mobile) VALUES ('Lokesh Rana', 'Biology', '33344455');
@@ -18,4 +10,3 @@ INSERT INTO your_table_name (name, course, mobile) VALUES ('Sami Daher', 'Math',
 INSERT INTO your_table_name (name, course, mobile) VALUES ('Rami Naser', 'Biology', '54779870');
 INSERT INTO your_table_name (name, course, mobile) VALUES ('Sara Hani', 'Biology', '54779476');
 INSERT INTO your_table_name (name, course, mobile) VALUES ('Lora Mhanna', 'Math', '43534554');
-

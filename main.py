@@ -1,6 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication
-from ui import MainWindow
+# from legacy_ui import MainWindow    # using SQLite Database
+from ui import MainWindow   # using MySQL Database
 
 
 # Main function to create and run the application

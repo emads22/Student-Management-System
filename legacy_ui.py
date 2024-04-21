@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QMainWindow, QLineEdit, QPushButton,
                              QToolBar, QAbstractItemView, QStatusBar,
                              QLabel, QGridLayout)
 from PyQt6.QtGui import QAction, QIcon
-import mysql.connector
+import sqlite3
 import logging
 from app_logging import handle_logging
 import re
