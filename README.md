@@ -1,7 +1,7 @@
 # Student Management System
 
 ## Overview
-Student Management System is a comprehensive Python application designed to streamline the management of student records within educational institutions. Built using PyQt6 for the graphical user interface and SQLite for data storage, this system offers a user-friendly interface for administrators to efficiently handle student data.
+Student Management System is a comprehensive Python application designed to streamline the management of student records within educational institutions. Built using PyQt6 for the graphical user interface and MySQL for data storage, this system offers a user-friendly interface for administrators to efficiently handle student data.
 
 The primary goal of this system is to simplify the process of managing student information, including their names, courses, and contact details. It provides a centralized platform where administrators can seamlessly perform tasks such as adding new students, searching for specific records, editing existing entries, and deleting outdated information.
 

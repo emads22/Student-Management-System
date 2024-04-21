@@ -18,31 +18,40 @@ handle_logging()
 
 class DatabaseConnection:
     """
-    A class to manage database connections.
-
-    Attributes:
-    - database_file (str): The path to the SQLite database file.
+    A class to manage MySQL database connections.
     """
 
-    def __init__(self, database_file=DB_FILE):
+    def __init__(self, host=HOST, port=PORT, user=USER, password=PASSWORD, database=DATABASE):
         """
-        Initialize the DatabaseConnection object.
+        Initialize the DatabaseConnection object with default connection parameters.
 
         Args:
-        - database_file (str): The path to the SQLite database file.
-          Defaults to the value of DB_FILE.
+        - host (str): The hostname or IP address of the MySQL server.
+        - port (int): The port number of the MySQL server.
+        - user (str): The username used to authenticate with the MySQL server.
+        - password (str): The password used to authenticate with the MySQL server.
+        - database (str): The name of the MySQL database to connect to.
         """
-        self.database_file = database_file
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.database = database
 
     def connect(self):
         """
-        Establish a connection to the SQLite database.
+        Establish a connection to the MySQL database.
 
         Returns:
-        - connection (sqlite3.Connection): A connection object representing the database connection.
+        - connection (mysql.connector.connection.MySQLConnection):
+            A connection object representing the database connection.
         """
-        # Establish a connection to the SQLite database using the specified database file
-        connection = sqlite3.connect(self.database_file)
+        # Establish a connection to the MySQL database using the specified parameters
+        connection = mysql.connector.connect(host=self.host,
+                                             port=self.port,
+                                             user=self.user,
+                                             password=self.password,
+                                             database=self.database)
         return connection
 
 
@@ -132,7 +141,7 @@ class MainWindow(QMainWindow):
         """
         Load data from the database and populate the table with it.
 
-        This method connects to the SQLite database, executes a query to retrieve
+        This method connects to the MySQL database, executes a query to retrieve
         all student records, and populates the table widget with the fetched data.
 
         """
@@ -140,12 +149,12 @@ class MainWindow(QMainWindow):
         db_connection = DatabaseConnection()
 
         try:
-            # Establish a connection to the SQLite database (using class) and create a cursor object
+            # Establish a connection to the MySQL database (using class) and create a cursor object
             with db_connection.connect() as connection:
                 cursor = connection.cursor()
 
                 # Execute the SQL query to retrieve all student records
-                cursor.execute(GET_ALL_STUDENTS_SQLITE_QUERY)
+                cursor.execute(GET_ALL_STUDENTS_MYSQL_QUERY)
 
                 # Fetch all the rows returned by the query
                 all_students_rows = cursor.fetchall()
@@ -168,7 +177,7 @@ class MainWindow(QMainWindow):
             success_msg = "Table data loaded successfully."
             logging.info(success_msg)
 
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             # log the error
             error_msg = f"Error loading table data"
             QMessageBox.critical(self, "Error", error_msg)
@@ -332,7 +341,7 @@ class InsertDialog(QDialog):
 
     def add_student(self):
         """
-        Adds a new student record to the SQLite database.
+        Adds a new student record to the MySQL database.
         """
         # Get inputs from the user
         name = self.student_name.text().strip().title()
@@ -360,12 +369,12 @@ class InsertDialog(QDialog):
             db_connection = DatabaseConnection()
 
             try:
-                # Establish a connection to the SQLite database (using class) and create a cursor object within a with statement
+                # Establish a connection to the MySQL database (using class) and create a cursor object within a with statement
                 with db_connection.connect() as connection:
                     cursor = connection.cursor()
 
                     # Execute the SQL query to insert a new student record
-                    cursor.execute(INSERT_STUDENT_SQLITE_QUERY,
+                    cursor.execute(INSERT_STUDENT_MYSQL_QUERY,
                                    (name, course, phone))
                     # Commit changes to the database
                     connection.commit()
@@ -380,7 +389,7 @@ class InsertDialog(QDialog):
                     QMessageBox.information(self, "Success", success_msg)
                     logging.info(success_msg)
 
-            except sqlite3.Error as e:
+            except mysql.connector.Error as e:
                 # Rollback changes if an error occurs
                 error_msg = f'Error adding student record for "{name}"'
                 QMessageBox.critical(self, "Error", error_msg)
@@ -468,7 +477,7 @@ class SearchDialog(QDialog):
 
     def search_student(self):
         """
-        Searches for a student in the SQLite database.
+        Searches for a student in the MySQL database.
         If found, highlights the records in the table and logs the success message.
         If not found, displays a warning message and clears the input field for new entry.
         """
@@ -509,7 +518,7 @@ class SearchDialog(QDialog):
 
     def exists_in_db(self, student_name):
         """
-        Checks if a student exists in the SQLite database.
+        Checks if a student exists in the MySQL database.
         """
         connection = None
         this_student_rows = []
@@ -523,12 +532,12 @@ class SearchDialog(QDialog):
                 cursor = connection.cursor()
 
                 # Execute the query to search for the student
-                cursor.execute(SEARCH_STUDENT_SQLITE_QUERY, (student_name, ))
+                cursor.execute(SEARCH_STUDENT_MYSQL_QUERY, (student_name, ))
 
                 # Fetch all matching rows
                 this_student_rows = cursor.fetchall()
 
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             # Log the error with details
             error_msg = f"Error searching in database for {student_name}"
             QMessageBox.critical(self, "Error", error_msg)
@@ -600,7 +609,7 @@ class EditDialog(QDialog):
 
     def update_student(self):
         """
-        Updates a student record in the SQLite database.
+        Updates a student record in the MySQL database.
         """
         # Prompt the user for confirmation before updating
         if self.confirm_update():
@@ -635,13 +644,13 @@ class EditDialog(QDialog):
                     # Once all inputs are valid, and new data entered (modified), Create a DatabaseConnection instance
                     db_connection = DatabaseConnection()
 
-                    # Establish a connection to the SQLite db (using class) and create a cursor object within a with statement
+                    # Establish a connection to the MySQL db (using class) and create a cursor object within a with statement
                     try:
                         with db_connection.connect() as connection:
                             cursor = connection.cursor()
 
                             # Execute the SQL query to insert a new student record
-                            cursor.execute(UPDATE_STUDENT_SQLITE_QUERY,
+                            cursor.execute(UPDATE_STUDENT_MYSQL_QUERY,
                                            (name, course, phone, self.student_id))
                             # Commit changes to the database
                             connection.commit()
@@ -657,7 +666,7 @@ class EditDialog(QDialog):
                                 self, "Success", success_msg)
                             logging.info(success_msg)
 
-                    except sqlite3.Error as e:
+                    except mysql.connector.Error as e:
                         # Rollback changes if an error occurs
                         error_msg = f'Error updating student record for "{
                             name}"'
@@ -800,18 +809,18 @@ class DeleteDialog(QDialog):
 
     def delete_student(self):
         """
-        Deletes the current selected student record in the SQLite database.
+        Deletes the current selected student record in the MySQL database.
         """
         # Create a DatabaseConnection instance
         db_connection = DatabaseConnection()
 
-        # Establish a connection to the SQLite database (using class) and create a cursor object within a with statement
+        # Establish a connection to the MySQL database (using class) and create a cursor object within a with statement
         try:
             with db_connection.connect() as connection:
                 cursor = connection.cursor()
 
                 # Execute the SQL query to insert a new student record
-                cursor.execute(DELETE_STUDENT_SQLITE_QUERY,
+                cursor.execute(DELETE_STUDENT_MYSQL_QUERY,
                                (self.student_id, ))
                 # Commit changes to the database
                 connection.commit()
@@ -826,7 +835,7 @@ class DeleteDialog(QDialog):
                 QMessageBox.information(self, "Success", success_msg)
                 logging.info(success_msg)
 
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             # Rollback changes if an error occurs
             error_msg = f'Error deleting student record for "{
                 self.student_name}"'
@@ -848,7 +857,7 @@ class AboutDialog(QMessageBox):
         self.setWindowTitle("About")
         content = """
 <h3>About This App</h3>
-<p>Student Management System is a comprehensive Python application designed to streamline the management of student records within educational institutions. Built using PyQt6 for the graphical user interface and SQLite for data storage, this system offers a user-friendly interface for administrators to efficiently handle student data.
+<p>Student Management System is a comprehensive Python application designed to streamline the management of student records within educational institutions. Built using PyQt6 for the graphical user interface and MySQL for data storage, this system offers a user-friendly interface for administrators to efficiently handle student data.
 </p>
 <p>
 The primary goal of this system is to simplify the process of managing student information, including their names, courses, and contact details. It provides a centralized platform where administrators can seamlessly perform tasks such as adding new students, searching for specific records, editing existing entries, and deleting outdated information.

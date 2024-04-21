@@ -1,11 +1,28 @@
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 ASSETS_DIR = Path("./assets")
-DB_FILE = ASSETS_DIR / "data" / "SQLite" / "database.db"
 ADD_ICON = ASSETS_DIR / "icons" / "add.png"
 SEARCH_ICON = ASSETS_DIR / "icons" / "search.png"
 CLEAR_ICON = ASSETS_DIR / "icons" / "clear.png"
+
+# SQLITE data
+DB_FILE = ASSETS_DIR / "data" / "SQLite" / "database.db"
+
+# MYSQL data
+HOST = os.environ.get("HOST")
+PORT = os.environ.get("PORT")
+USER = os.environ.get("USER")
+PASSWORD = os.environ.get("PASSWORD")
+DATABASE = "school"
+
+# GUI table data
 TABLE_HEADERS = ("Id", "Names", "Course", "Mobile")
 COURSES = ['Select Course', 'Math', 'Astronomy', 'Biology', 'Physics']
 
