@@ -13,7 +13,7 @@ The graphical interface features intuitive controls, including a toolbar for qui
 
 With robust error handling mechanisms in place, the system maintains reliability and transparency in database operations. Administrators can rely on detailed log messages to track successful operations and diagnose any errors or exceptions that may occur during runtime. The error handling architecture is designed to be expandable, allowing for easy integration of additional error handling functionalities as needed.
 
-Overall, Student Management System serves as a powerful tool for educational institutions, offering an efficient and organized approach to managing student records. Whether it's maintaining up-to-date information or performing routine administrative tasks, this application empowers administrators to effectively oversee student data management with ease.
+**Note:** This version of the application now uses MySQL as the default database. If you prefer to use SQLite, you can use the `legacy_ui.py` file instead of `ui.py`. Additionally, don't forget to add the MySQL connection data (host, port, user, password, and database) in the `constants.py` file before running the application.
 
 ## Features
 - **Add Student**: Allows users to add new student records to the database.
@@ -25,7 +25,7 @@ Overall, Student Management System serves as a powerful tool for educational ins
 1. Clone the repository.
 2. Ensure Python 3.x is installed.
 3. Install the required dependencies using `pip install -r requirements.txt`.
-4. Configure the necessary parameters such as database file path in `constants.py`.
+4. Configure the necessary parameters such as MySQL connection data (host, port, user, password, and database) in `constants.py`.
 5. Run the script using `python main.py`.
 
 ## Usage
@@ -66,3 +66,4 @@ Contributions are welcome! Here are some ways you can contribute to the project:
 This project is licensed under the MIT License, which grants permission for free use, modification, distribution, and sublicense of the code, provided that the copyright notice (attributed to [emads22](https://github.com/emads22)) and permission notice are included in all copies or substantial portions of the software. This license is permissive and allows users to utilize the code for both commercial and non-commercial purposes.
 
 Please see the [LICENSE](LICENSE) file for more details.
+
