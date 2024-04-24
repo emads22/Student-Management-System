@@ -7,6 +7,8 @@ The primary goal of this system is to simplify the process of managing student i
 
 The application's database schema is included, offering users the flexibility to customize and expand the database structure according to their specific requirements. Users are free to add new columns or data as preferred, ensuring adaptability to evolving needs and preferences.
 
+**Database Creation and Population:** Database creation queries and population scripts for both MySQL and SQLite databases are available in the `asset/data/` folder under the `MySQL` directory for MySQL database and the `SQLite` directory for SQLite database.
+
 By leveraging Object-Oriented Programming (OOP) principles, the application is structured into modular components, enhancing maintainability and scalability. Each component, from the main window to the various dialog boxes, encapsulates specific functionalities, promoting code reusability and clarity.
 
 The graphical interface features intuitive controls, including a toolbar for quick access to common actions and a status bar that dynamically adjusts based on user interactions. Notably, the status bar displays contextual buttons for editing and deleting student records only when a row is selected, ensuring a streamlined user experience.
