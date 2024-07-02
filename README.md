@@ -23,6 +23,14 @@ With robust error handling mechanisms in place, the system maintains reliability
 - **Edit Record**: Allows users to modify existing student records.
 - **Delete Record**: Enables users to remove student records from the database.
 
+## Technologies Used
+- **mysql-connector-python**: A library for connecting to MySQL databases.
+- **PyQt6**: A set of Python bindings for the Qt application framework.
+- **python-dotenv**: A library for managing environment variables in .env files.
+- **logging**: A module for tracking events that happen when software runs.
+- **sqlite3**: A module for working with SQLite databases.
+- **re**: A module for regular expression operations.
+
 ## Setup
 1. Clone the repository.
 2. Ensure Python 3.x is installed.
