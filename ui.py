@@ -81,9 +81,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Student Management System")
 
         # Create menu items for File and Help
-        file_menu_item = self.menuBar().addMenu("&File")
-        help_menu_item = self.menuBar().addMenu("&Help")
+        file_menu_item = self.menuBar().addMenu("&File")        
         edit_menu_item = self.menuBar().addMenu("&Edit")
+        help_menu_item = self.menuBar().addMenu("&Help")
 
         # Add sub-items to menu items, called actions (also add an icon for each to be used in the toolbar)
         add_student_action = QAction(QIcon(str(ADD_ICON)), "Add Student", self)
